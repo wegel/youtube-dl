@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import itertools
 import re
+import urlparse
 
 from .common import SearchInfoExtractor
 
@@ -20,6 +21,19 @@ class GoogleSearchIE(SearchInfoExtractor):
         'playlist_count': 15,
     }
 
+    def get_query_dict(self, query, pagenum):
+        if query.startswith("q="):
+            q = dict(urlparse.parse_qsl(query))
+            q['start'] =  pagenum * 10
+        else:
+            q = {
+                    'tbm': 'vid',
+                    'q': query,
+                    'start': pagenum * 10,
+                    'hl': 'en',
+                }
+        return q
+
     def _get_n_results(self, query, n):
         """Get a specified number of results for a query"""
 
@@ -35,12 +49,7 @@ class GoogleSearchIE(SearchInfoExtractor):
                 'http://www.google.com/search',
                 'gvsearch:' + query,
                 note='Downloading result page %s' % (pagenum + 1),
-                query={
-                    'tbm': 'vid',
-                    'q': query,
-                    'start': pagenum * 10,
-                    'hl': 'en',
-                })
+                query=self.get_query_dict(query, pagenum))
 
             for hit_idx, mobj in enumerate(re.finditer(
                     r'<h3 class="r"><a href="([^"]+)"', webpage)):
